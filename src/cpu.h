@@ -1,0 +1,2 @@
+// Declare Functions
+int TotalCPUUtil();

@@ -1,0 +1,4 @@
+struct statistics {
+    int TotalCPUPercent;
+
+};
