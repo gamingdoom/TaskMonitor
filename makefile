@@ -43,4 +43,4 @@ obj: $(objects)
 clean: ; rm -rf $(build_root)
 
 taskmonitor:
-	gcc -o build/taskmonitor $(objects) -lm
+	gcc -g -o build/taskmonitor $(objects) -lm

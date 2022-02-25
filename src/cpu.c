@@ -31,7 +31,7 @@ int TotalCPUUtil() {
     // Wait 10ms and reset
     i = 0;
     free(tofree);
-    // 10k microseconds
+    // 0.1 seconds
     usleep(100000);
 
     // Read /proc/stat
