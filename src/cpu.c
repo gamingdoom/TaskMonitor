@@ -98,6 +98,7 @@ struct pidinfo* ProcessCPUUtil(){
             i++;
         }
     }
+    closedir(proc);
 
     free(tofree);
     return 0;
