@@ -37,7 +37,7 @@ $(foreach s,$(sources),$(foreach o,$(filter %$(basename $(notdir $s)).o,$(object
 # This is how we compile sources:
 # First check if directory for the target file exists. 
 # If it doesn't run 'mkdir' command.
-$(objects): ; $(if $(wildcard $(@D)),,mkdir -p $(@D) &&) gcc -c $< -o $@
+$(objects): ; $(if $(wildcard $(@D)),,mkdir -p $(@D) &&) gcc -g -c $< -o $@
 
 obj: $(objects)
 clean: ; rm -rf $(build_root)

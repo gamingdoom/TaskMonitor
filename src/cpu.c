@@ -1,8 +1,9 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
 #include "cpu.h"
 
 
@@ -48,14 +49,14 @@ int TotalCPUUtil() {
     free(tofree);
     
     // Calculate percentage CPU usage
-    int work1 = atoi(valArr[2]) + atoi(valArr[3]) + atoi(valArr[4]);
-    int total1 = atoi(valArr[2]) + atoi(valArr[3]) + atoi(valArr[4]) + atoi(valArr[5]) + atoi(valArr[6]) + atoi(valArr[7]) + atoi(valArr[8]) + atoi(valArr[9]) + atoi(valArr[10]) + atoi(valArr[11]);
+    int workOld = atoi(valArr[2]) + atoi(valArr[3]) + atoi(valArr[4]);
+    int totalOld = atoi(valArr[2]) + atoi(valArr[3]) + atoi(valArr[4]) + atoi(valArr[5]) + atoi(valArr[6]) + atoi(valArr[7]) + atoi(valArr[8]) + atoi(valArr[9]) + atoi(valArr[10]) + atoi(valArr[11]);
 
-    int work2 = atoi(newValArr[2]) + atoi(newValArr[3]) + atoi(newValArr[4]);
-    int total2 = atoi(newValArr[2]) + atoi(newValArr[3]) + atoi(newValArr[4]) + atoi(newValArr[5]) + atoi(newValArr[6]) + atoi(newValArr[7]) + atoi(newValArr[8]) + atoi(newValArr[9]) + atoi(newValArr[10]) + atoi(newValArr[11]);
+    int workNew = atoi(newValArr[2]) + atoi(newValArr[3]) + atoi(newValArr[4]);
+    int totalNew = atoi(newValArr[2]) + atoi(newValArr[3]) + atoi(newValArr[4]) + atoi(newValArr[5]) + atoi(newValArr[6]) + atoi(newValArr[7]) + atoi(newValArr[8]) + atoi(newValArr[9]) + atoi(newValArr[10]) + atoi(newValArr[11]);
 
-    float work = work2 - work1;
-    float total = total2 - total1;
+    float work = workNew - workOld;
+    float total = totalNew - totalOld;
     
     if (total != 0){
         double CPUPercent = (work/total)*100;
@@ -63,4 +64,41 @@ int TotalCPUUtil() {
         return rtnCPUPercent;
     }
     else{ return -1; } //Error
+}
+
+#include <sys/resource.h>
+#include <dirent.h>
+
+struct pidinfo* ProcessCPUUtil(){
+    
+    struct rusage *procusage;
+    struct dirent *files;
+    int* NumProc;
+    int* pids;
+    int i;
+    int* tofree;
+
+    // List files in /proc and put the pids in pid array
+    DIR *proc = opendir("/proc/");
+    // Get num of processes for malloc
+    while ((files = readdir(proc)) != NULL){
+        if (atoi(files->d_name) != 0)
+        {
+            i++;
+        }
+    }
+    tofree = pids = malloc(i*sizeof(int));
+    i = 0;
+    // Store pids into malloced array
+    while ((files = readdir(proc)) != NULL){
+        if (atoi(files->d_name) != 0)
+        {
+            pids[i] = atoi(files->d_name);
+            printf("%d\n", pids[i]);
+            i++;
+        }
+    }
+
+    free(tofree);
+    return 0;
 }

@@ -4,7 +4,7 @@
 		{
 			"type": "shell",
 			"label": "build",
-			"command": "make",
+			"command": "make -B",
 			"group": {
 				"kind": "build",
 				"isDefault": true
