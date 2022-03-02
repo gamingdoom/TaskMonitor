@@ -67,9 +67,7 @@ int TotalCPUUtil() {
 
 int PIDCPUUsage(int pid){
     FILE *procstat;
-    char *line;
-    char *token;
-    char *str, *tofree;
+    char *str, *tofree, *line, *token;
     char psvalArr[32][64];
     char psnewValArr[32][64];
     char valArr[32][64];
@@ -188,12 +186,12 @@ int PIDCPUUsage(int pid){
 #include <sys/resource.h>
 #include <dirent.h>
 
-int *ProcessCPUUtil(){
+void ProcessCPUUtil(int *pids, int *PIDCPU){
     
     struct rusage *procusage;
     struct dirent *files;
     int* NumProc;
-    int* pids;
+    //int* pids;
     int i = 0;
     int* tofree;
 
@@ -225,7 +223,7 @@ int *ProcessCPUUtil(){
 
     // Iterate over every PID to get it's CPU usage
     int j;
-    int *PIDCPU;
+    //int *PIDCPU;
 
     tofree = PIDCPU = malloc(i*sizeof(int));
     for (j=0; j < i; j++) {
@@ -234,5 +232,5 @@ int *ProcessCPUUtil(){
 
     free(pids);
     free(tofree);
-    return PIDCPU;
+    return;
 }
