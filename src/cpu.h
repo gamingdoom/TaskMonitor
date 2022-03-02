@@ -7,4 +7,5 @@ struct pidinfo
 
 // Declare Functions
 int TotalCPUUtil();
-struct pidinfo* ProcessCPUUtil();
+int *ProcessCPUUtil();
+int PIDCPUUsage(int pid);
