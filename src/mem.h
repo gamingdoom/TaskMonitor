@@ -1,0 +1,2 @@
+// Declare functions
+float memUsage();
