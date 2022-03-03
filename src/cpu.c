@@ -159,8 +159,6 @@ int PIDCPUUsage(int pid){
         i++;
     }
 
-    //printf("14: %d 15: %d new14: %d new15: %d\n", atoi(valArr[13]), atoi(valArr[14]),atoi(newValArr[13]) ,atoi(newValArr[14]));
-
     free(tofree);
     free(line);
     i = 0;
@@ -186,54 +184,64 @@ int PIDCPUUsage(int pid){
     else{ return -1; } //Error
 }
 
+int getPIDs(int *pids){
+    int pidQty = 0;
+    struct dirent *files;
+    int i = 0;
+
+    // Get amount of PIDs
+    DIR *proc = opendir("/proc/");
+    while ((files = readdir(proc)) != NULL){
+        if (atoi(files->d_name) != 0)
+        {
+            pidQty++;
+        }
+    }
+
+    // Reset
+    closedir(proc);
+    // Check if just trying to get num of pids
+    if (pids)
+    {
+        pids = malloc(pidQty*sizeof(int));
+        files = NULL;
+        proc = opendir("/proc/");
+
+        // Store pids into malloced array
+        while ((files = readdir(proc)) != NULL){
+            if (atoi(files->d_name) != 0)
+            {
+                pids[i] = atoi(files->d_name);
+                i++;
+            }
+        }
+    }
+    return pidQty;
+}
+
 
 void ProcessCPUUtil(int *pids, int *PIDCPU){
     
     struct rusage *procusage;
     struct dirent *files;
     int* NumProc;
-    //int* pids;
-    int i = 0;
+    int i = getPIDs(pids);
     int* tofree;
-
-    // List files in /proc and put the pids in pid array
-    DIR *proc = opendir("/proc/");
-    // Get num of processes for malloc
-    while ((files = readdir(proc)) != NULL){
-        if (atoi(files->d_name) != 0)
-        {
-            i++;
-        }
-    }
-
-    // Reset
-    closedir(proc);
-    pids = malloc(i*sizeof(int));
-    files = NULL;
-    i = 0;
-    proc = opendir("/proc/");
-
-    // Store pids into malloced array
-    while ((files = readdir(proc)) != NULL){
-        if (atoi(files->d_name) != 0)
-        {
-            pids[i] = atoi(files->d_name);
-            i++;
-        }
-    }
 
     // Iterate over every PID to get it's CPU usage
     int j;
     int *k = malloc(sizeof(int));
     memcpy(k, &i, sizeof(int));
-
     PIDCPU = malloc(i*sizeof(int));
+
+    // Time for multithreading to go brr (get cpu usage of each pid)
     #pragma omp parallel
     {
-        for (j=0; j < *k; j++) {
+        for (j = 0; j < *k; j++) {
             PIDCPU[j] = PIDCPUUsage(pids[j]);
         }
     }
+
     free(k);
     return;
 }

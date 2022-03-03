@@ -12,7 +12,10 @@ int main(){
     // Get total CPU usage into struct
     stats.TotalCPUPercent = TotalCPUUtil();
     printf("CPU Usage = %d%%\n", stats.TotalCPUPercent);
+    
+
     free(pids);
     free(pidcpu);
+
     return 0;
 }
