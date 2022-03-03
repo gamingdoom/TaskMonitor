@@ -3,6 +3,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
+#include <sys/resource.h>
+#include <dirent.h>
+#include <omp.h>
 #include "cpu.h"
 
 
@@ -68,10 +71,10 @@ int TotalCPUUtil() {
 int PIDCPUUsage(int pid){
     FILE *procstat;
     char *str, *tofree, *line, *token;
-    char psvalArr[32][64];
-    char psnewValArr[32][64];
-    char valArr[32][64];
-    char newValArr[32][64];
+    char psvalArr[64][128];
+    char psnewValArr[64][128];
+    char valArr[64][128];
+    char newValArr[64][128];
     int i = 0;
     float usage;
     char namebuff[512];
@@ -177,14 +180,12 @@ int PIDCPUUsage(int pid){
     if (total != 0){
         double CPUPercent = (work/total)*100;
         int rtnCPUPercent = fabs(round(CPUPercent));
-        printf("%d %d%%\n", pid, rtnCPUPercent);
+        //printf("%d %d%%\n", pid, rtnCPUPercent);
         return rtnCPUPercent;
     }
     else{ return -1; } //Error
 }
 
-#include <sys/resource.h>
-#include <dirent.h>
 
 void ProcessCPUUtil(int *pids, int *PIDCPU){
     
@@ -207,7 +208,7 @@ void ProcessCPUUtil(int *pids, int *PIDCPU){
 
     // Reset
     closedir(proc);
-    tofree = pids = malloc(i*sizeof(int));
+    pids = malloc(i*sizeof(int));
     files = NULL;
     i = 0;
     proc = opendir("/proc/");
@@ -223,14 +224,16 @@ void ProcessCPUUtil(int *pids, int *PIDCPU){
 
     // Iterate over every PID to get it's CPU usage
     int j;
-    //int *PIDCPU;
+    int *k = malloc(sizeof(int));
+    memcpy(k, &i, sizeof(int));
 
-    tofree = PIDCPU = malloc(i*sizeof(int));
-    for (j=0; j < i; j++) {
-        PIDCPU[j] = PIDCPUUsage(pids[j]);
+    PIDCPU = malloc(i*sizeof(int));
+    #pragma omp parallel
+    {
+        for (j=0; j < *k; j++) {
+            PIDCPU[j] = PIDCPUUsage(pids[j]);
+        }
     }
-
-    free(pids);
-    free(tofree);
+    free(k);
     return;
 }

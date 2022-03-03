@@ -1,4 +1,3 @@
-
 all: obj taskmonitor
 
 # From StackOverflow: https://stackoverflow.com/questions/41568508/makefile-compile-multiple-c-file-at-once
@@ -6,6 +5,7 @@ all: obj taskmonitor
 obj:
 clean:
 
+LIBS=-fopenmp
 src_root := src
 src_subdirs := 
 build_root := build
@@ -37,10 +37,10 @@ $(foreach s,$(sources),$(foreach o,$(filter %$(basename $(notdir $s)).o,$(object
 # This is how we compile sources:
 # First check if directory for the target file exists. 
 # If it doesn't run 'mkdir' command.
-$(objects): ; $(if $(wildcard $(@D)),,mkdir -p $(@D) &&) gcc -g -c $< -o $@
+$(objects): ; $(if $(wildcard $(@D)),,mkdir -p $(@D) &&) gcc -g -c $< $(LIBS) -o $@
 
 obj: $(objects)
 clean: ; rm -rf $(build_root)
 
 taskmonitor:
-	gcc -g -o build/taskmonitor $(objects) -lm
+	gcc -g -o build/taskmonitor $(objects) -lm $(LIBS)
