@@ -1,6 +1,9 @@
 #include "cpu.h"
+#include "mem.h"
 
 struct statistics {
     int TotalCPUPercent;
-    struct pidinfo* pinfo;
+    int *pids;
+    int *pidUsage;
+
 };

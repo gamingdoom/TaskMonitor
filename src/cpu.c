@@ -31,11 +31,11 @@ int TotalCPUUtil() {
         i++;
     }
 
-    // Wait 10ms and reset
+    // Wait and reset
     i = 0;
     free(tofree);
-    // 0.1 seconds
-    usleep(100000);
+    // 0.15 seconds
+    usleep(150000);
 
     // Read /proc/stat
     procstat = fopen("/proc/stat", "r");
