@@ -13,9 +13,12 @@ int main(){
     stats.pidUsage = pidcpu;
     // Get total CPU usage into struct
     stats.TotalCPUPercent = TotalCPUUtil();
-    printf("CPU Usage = %d%%\n", stats.TotalCPUPercent);
-    // Memory Usage
-    memUsage();
+    // Total Memory Usage
+    stats.memGB = (stats.memMB = memUsage())/1024.0;
+    // Process Memory Usage
+    procMemUsage(7866);
+
+    printf("CPU Usage = %d%%\nMemory Usage (GB) = %.1fGB\n", stats.TotalCPUPercent, stats.memGB);
 
     free(pids);
     free(pidcpu);
