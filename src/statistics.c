@@ -1,4 +1,6 @@
 #include "statistics.h"
+#include "cpu.h"
+#include "mem.h"
 #include <stdio.h>
 #include <stdlib.h>
 
