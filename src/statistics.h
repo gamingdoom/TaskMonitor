@@ -7,4 +7,5 @@ struct statistics {
     int *pidUsage;
     long double memMB;
     double memGB;
+    float *pidMem;
 };

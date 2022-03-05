@@ -8,15 +8,15 @@ int main(){
     int *pidcpu = malloc(1*sizeof(int));
 
     // Get per-process CPU usage into struct
-    ProcessCPUUtil(pids, pidcpu);
+    int pidQty = ProcessCPUUtil(pids, pidcpu);
     stats.pids = pids;
     stats.pidUsage = pidcpu;
     // Get total CPU usage into struct
     stats.TotalCPUPercent = TotalCPUUtil();
     // Total Memory Usage
     stats.memGB = (stats.memMB = memUsage())/1024.0;
-    // Process Memory Usage
-    procMemUsage(7866);
+    // Get per-process memory usage
+    stats.pidMem = ProcessMemUtil(stats.pids, pidQty);
 
     printf("CPU Usage = %d%%\nMemory Usage (GB) = %.1fGB\n", stats.TotalCPUPercent, stats.memGB);
 

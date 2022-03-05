@@ -220,7 +220,7 @@ int getPIDs(int *pids){
 }
 
 
-void ProcessCPUUtil(int *pids, int *PIDCPU){
+int ProcessCPUUtil(int *pids, int *PIDCPU){
     
     struct rusage *procusage;
     struct dirent *files;
@@ -243,5 +243,5 @@ void ProcessCPUUtil(int *pids, int *PIDCPU){
     }
 
     free(k);
-    return;
+    return i;
 }

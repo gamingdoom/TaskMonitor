@@ -1,4 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <limits.h>
+#include <math.h>
 
 float memUsage(){
     FILE *meminfo;
@@ -16,17 +20,31 @@ float memUsage(){
 }
 
 float procMemUsage(int pid){
-    FILE *procpidstat;
-    char namebuf[1024]; sprintf(namebuf,"/proc/%d/stat", pid);
-    long int rss;
+    FILE *procpidstatm;
+    char namebuf[1024]; sprintf(namebuf,"/proc/%d/statm", pid);
+    long double rss;
 
     // Parse /proc/[pid]/stat
-    procpidstat = fopen(namebuf, "r");
-    // See https://man7.org/linux/man-pages/man5/proc.5.html
-    fscanf(procpidstat, "%*d %*s %*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %*llu %*lu %ld", &rss);
-    fclose(procpidstat);
+    if(access(namebuf, F_OK) == 0){
+        procpidstatm = fopen(namebuf, "r");
+        fscanf(procpidstatm, "%*lu %Lf", &rss);
+        fclose(procpidstatm);
+    }
 
-    printf("%ld\n", rss);
+    // /proc/[pid]/statm has it's data in pages so we need to convert to MiB
+    rss = rss * getpagesize() / 1048576;
+
+    //printf("%.1Lf MiB\n", rss);
     
-    return 0.0;
+    return rss;
+}
+
+float *ProcessMemUtil(int *pids, int pidsLen){
+    float *pidsMem = malloc(pidsLen * sizeof(float));
+    
+    for (int i = 0; i < pidsLen; i++) {
+        pidsMem[i] = procMemUsage(i);
+    }
+
+    return pidsMem;
 }
