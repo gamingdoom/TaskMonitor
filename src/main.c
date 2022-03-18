@@ -1,10 +1,29 @@
-#include "statistics.h"
+#include "main.h"
 #include "cpu.h"
 #include "mem.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <gtk/gtk.h>
+#include <glib.h>
 
-int main(){
+int main(int argc, char *argv[]){
+    GtkWidget *window;
+    GtkBuilder *builder = NULL;
+
+    gtk_init();
+
+    builder = gtk_builder_new();
+
+    if( gtk_builder_add_from_file (builder,"gui/TaskMonitor.glade" , NULL) == 0)
+    {
+        printf("gtk_builder_add_from_file FAILED\n");
+        return 1;
+    }
+
+    window = GTK_WIDGET(gtk_builder_get_object(builder,"Task Monitor"));
+
+    gtk_widget_show(window);
+
     struct statistics stats;
     int *pids = malloc(1*sizeof(int));
     int *pidcpu = malloc(1*sizeof(int));
