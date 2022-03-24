@@ -6,3 +6,10 @@ struct statistics {
     double memGB;
     float *pidMem;
 };
+
+enum {
+    PID,
+    CPUUSAGE,
+    MEMUSED,
+    N_COLUMNS
+};

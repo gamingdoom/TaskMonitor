@@ -65,7 +65,7 @@ int TotalCPUUtil() {
         int rtnCPUPercent = round(CPUPercent);
         return rtnCPUPercent;
     }
-    else{ return -1; } //Error
+    else { return -1; } //Error
 }
 
 int PIDCPUUsage(int pid){
@@ -90,7 +90,7 @@ int PIDCPUUsage(int pid){
     if( access(namebuff, F_OK) == 0 ){
         fgets(line, 1024, procstat);
         fclose(procstat);
-    }
+    }else {return 0;}
     
 
     // Get old values into array from the first line of /proc/PID/stat
@@ -108,7 +108,7 @@ int PIDCPUUsage(int pid){
 
     // Read /proc/stat
     procstat = fopen("/proc/stat", "r");
-    fgets(line, sizeof line, procstat);
+    fgets(line, 1024 * sizeof(char), procstat);
     fclose(procstat);
 
     // Get old values into array from the first line of /proc/stat
@@ -124,15 +124,15 @@ int PIDCPUUsage(int pid){
     free(line);
     line = malloc(1024*sizeof(char));
 
-    // Wait 0.05 seconds
-    usleep(50000);
+    // Wait 0.017 seconds (~1 jiffy)
+    usleep(17000);
 
     // Read /proc/PID/stat
     procstat = fopen(namebuff, "r");
     if( access(namebuff, F_OK) == 0 ){
         fgets(line, 1024, procstat);
         fclose(procstat);
-    }
+    }else {return 0;}
 
     // Get new  values into array from the first line of /proc/PID/stat
     tofree = str = strdup(line);
@@ -149,10 +149,10 @@ int PIDCPUUsage(int pid){
 
     // Read /proc/stat
     procstat = fopen("/proc/stat", "r");
-    fgets(line, sizeof line, procstat);
+    fgets(line, 1024 * sizeof(char), procstat);
     fclose(procstat);
 
-    // Get old values into array from the first line of /proc/stat
+    // Get new values into array from the first line of /proc/stat
     tofree = str = strdup(line);
     while ((token = strsep(&str, " "))){
         strcpy(psnewValArr[i], token);
@@ -170,18 +170,18 @@ int PIDCPUUsage(int pid){
 
     int workNew = atoi(newValArr[13]) + atoi(newValArr[14]);
     // Need to get from proc stat
-    int totalNew = atoi(newValArr[2]) + atoi(psnewValArr[3]) + atoi(psnewValArr[4]) + atoi(psnewValArr[5]) + atoi(psnewValArr[6]) + atoi(psnewValArr[7]) + atoi(psnewValArr[8]) + atoi(psnewValArr[9]) + atoi(psnewValArr[10]) + atoi(psnewValArr[11]);
+    int totalNew = atoi(psnewValArr[2]) + atoi(psnewValArr[3]) + atoi(psnewValArr[4]) + atoi(psnewValArr[5]) + atoi(psnewValArr[6]) + atoi(psnewValArr[7]) + atoi(psnewValArr[8]) + atoi(psnewValArr[9]) + atoi(psnewValArr[10]) + atoi(psnewValArr[11]);
 
     float work = workNew - workOld;
     float total = totalNew - totalOld;
     
-    if (total != 0){
+    if (total > 0.0){
         double CPUPercent = (work/total)*100;
         int rtnCPUPercent = fabs(round(CPUPercent));
         //printf("%d %d%%\n", pid, rtnCPUPercent);
         return rtnCPUPercent;
     }
-    else{ return -1; } //Error
+    else{ return 0; } //No Work Observed or error
 }
 
 int getPIDs(int *pids){
@@ -203,16 +203,19 @@ int getPIDs(int *pids){
     // Check if just trying to get num of pids
     if (pids)
     {
-        pids = malloc(pidQty*sizeof(int));
+        //pids = malloc(pidQty*sizeof(int));
         files = NULL;
         proc = opendir("/proc/");
 
         // Store pids into malloced array
         while ((files = readdir(proc)) != NULL){
             if (atoi(files->d_name) != 0)
-            {
-                pids[i] = atoi(files->d_name);
-                i++;
+            {   
+                if (i < (pidQty + 128)){
+                    pids[i] = atoi(files->d_name);
+                    i++;
+                }
+                else {break;}
             }
         }
     }
@@ -220,28 +223,29 @@ int getPIDs(int *pids){
 }
 
 
-int ProcessCPUUtil(int *pids, int *PIDCPU){
+int ProcessCPUUtil(int *pids, int *PIDCPU, int pidQty){
     
     struct rusage *procusage;
     struct dirent *files;
     int* NumProc;
-    int i = getPIDs(pids);
+    //int i = getPIDs(NULL);
     int* tofree;
 
     // Iterate over every PID to get it's CPU usage
     int j;
     int *k = malloc(sizeof(int));
-    memcpy(k, &i, sizeof(int));
-    PIDCPU = malloc(i*sizeof(int));
+    memcpy(k, &pidQty, sizeof(int));
+    //PIDCPU = malloc(pidQty*sizeof(int));
 
     // Time for multithreading to go brr (get cpu usage of each pid)
-    #pragma omp parallel
-    {
+    //#pragma omp parallel
+    //{
         for (j = 0; j < *k; j++) {
+            //printf("%d\n", pids[j]);
             PIDCPU[j] = PIDCPUUsage(pids[j]);
         }
-    }
+    //}
 
     free(k);
-    return i;
+    return pidQty;
 }

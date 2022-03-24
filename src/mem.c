@@ -22,28 +22,28 @@ float memUsage(){
 float procMemUsage(int pid){
     FILE *procpidstatm;
     char namebuf[1024]; sprintf(namebuf,"/proc/%d/statm", pid);
-    long double rss;
+    float rss;
 
     // Parse /proc/[pid]/stat
     if(access(namebuf, F_OK) == 0){
         procpidstatm = fopen(namebuf, "r");
-        fscanf(procpidstatm, "%*lu %Lf", &rss);
+        fscanf(procpidstatm, "%*lu %f", &rss);
         fclose(procpidstatm);
     }
 
     // /proc/[pid]/statm has it's data in pages so we need to convert to MiB
     rss = rss * getpagesize() / 1048576;
 
-    //printf("%.1Lf MiB\n", rss);
+    //printf("%.1f MiB\n", rss);
     
     return rss;
 }
 
 float *ProcessMemUtil(int *pids, int pidsLen){
-    float *pidsMem = malloc(pidsLen * sizeof(float));
+    float *pidsMem = malloc((pidsLen + 128) * sizeof(float));
     
     for (int i = 0; i < pidsLen; i++) {
-        pidsMem[i] = procMemUsage(i);
+        pidsMem[i] = procMemUsage(pids[i]);
     }
 
     return pidsMem;
