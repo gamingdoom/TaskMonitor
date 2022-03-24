@@ -33,8 +33,6 @@ float procMemUsage(int pid){
 
     // /proc/[pid]/statm has it's data in pages so we need to convert to MiB
     rss = rss * getpagesize() / 1048576;
-
-    //printf("%.1f MiB\n", rss);
     
     return rss;
 }

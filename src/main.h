@@ -1,3 +1,5 @@
+#include <gtk/gtk.h>
+
 struct statistics {
     int TotalCPUPercent;
     int *pids;
@@ -5,6 +7,11 @@ struct statistics {
     long double memMB;
     double memGB;
     float *pidMem;
+};
+
+struct populateStatsArgs {
+    bool repeat;
+    GtkWidget *tv;
 };
 
 enum {

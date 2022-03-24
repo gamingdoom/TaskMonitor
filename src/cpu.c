@@ -228,23 +228,16 @@ int ProcessCPUUtil(int *pids, int *PIDCPU, int pidQty){
     struct rusage *procusage;
     struct dirent *files;
     int* NumProc;
-    //int i = getPIDs(NULL);
     int* tofree;
 
     // Iterate over every PID to get it's CPU usage
     int j;
     int *k = malloc(sizeof(int));
     memcpy(k, &pidQty, sizeof(int));
-    //PIDCPU = malloc(pidQty*sizeof(int));
 
-    // Time for multithreading to go brr (get cpu usage of each pid)
-    //#pragma omp parallel
-    //{
-        for (j = 0; j < *k; j++) {
-            //printf("%d\n", pids[j]);
-            PIDCPU[j] = PIDCPUUsage(pids[j]);
-        }
-    //}
+    for (j = 0; j < *k; j++) {
+        PIDCPU[j] = PIDCPUUsage(pids[j]);
+    }
 
     free(k);
     return pidQty;
