@@ -218,6 +218,7 @@ int getPIDs(int *pids){
                 else {break;}
             }
         }
+        closedir(proc);
     }
     return pidQty;
 }

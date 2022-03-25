@@ -8,16 +8,17 @@
 #include <glib.h>
 #include <pthread.h>
 //gtk/gtk.h included in main.h
+GtkWidget *tv; // Tree View
 
-void *populateStats(void* PSA){
-    struct populateStatsArgs psa = *(struct populateStatsArgs*)PSA;
+void *populateStats(void* repeat){
+    //struct populateStatsArgs psa = *(struct populateStatsArgs*)PSA;
     GtkListStore *store = gtk_list_store_new(N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
-    GtkWidget *tv = psa.tv;
+    //GtkWidget *tv = psa.tv;
     struct statistics stats;
     int pidQty = getPIDs(NULL);
     stats.pids = (int*) malloc((pidQty + 128) * sizeof(int));
     stats.pidUsage = (int*) malloc((pidQty + 128) * sizeof(int));
-    char MemUsageStr[256], CPUUsageStr[256], PIDStr[256]; 
+    char *MemUsageStr = malloc(sizeof(char)*128), *CPUUsageStr = malloc(sizeof(char)*128), *PIDStr = malloc(sizeof(char) * 128); 
     
     pidQty = getPIDs(stats.pids);
 
@@ -29,8 +30,6 @@ void *populateStats(void* PSA){
     stats.memGB = (stats.memMB = memUsage())/1024.0;
     // Get per-process memory usage
     stats.pidMem = ProcessMemUtil(stats.pids, pidQty);
-
-    //printf("CPU Usage = %d%%\nMemory Usage (GiB) = %.1f GiB\n", stats.TotalCPUPercent, stats.memGB);
 
     snprintf(CPUUsageStr, 256*sizeof(char), "%d %%", stats.TotalCPUPercent);
     snprintf(MemUsageStr, 256*sizeof(char), "%.1f GiB", stats.memGB);
@@ -53,11 +52,17 @@ void *populateStats(void* PSA){
 
     gtk_tree_view_set_model(GTK_TREE_VIEW(tv), GTK_TREE_MODEL(store));
 
+    free(stats.pidMem);
     free(stats.pids);
     free(stats.pidUsage);
+    free(CPUUsageStr);
+    free(MemUsageStr);
+    free(PIDStr);
 
-    if (psa.repeat == true)
-        populateStats((void *)&psa);
+    g_object_unref(store);
+
+    if ((bool)repeat == true)
+        populateStats((void *)true);
 
     return 0;
 }
@@ -66,7 +71,6 @@ static void activate (GtkApplication* app, gpointer user_data){
     // Set window items and layout
     GtkWidget *window;
     GtkWidget *sbox;
-    GtkWidget *tv; // Tree View
     GtkCellRenderer *ren;
     GtkTreeIter iter;
     pthread_t thread;
@@ -93,16 +97,8 @@ static void activate (GtkApplication* app, gpointer user_data){
 
     gtk_widget_show(window);
 
-    struct populateStatsArgs psa;
-
-    psa.repeat = false;
-    psa.tv = tv;
-
-    populateStats(&psa);
-
-    psa.repeat = true;
-
-    pthread_create(&thread, NULL, populateStats, (void *)&psa);
+    populateStats((void*)false);
+    pthread_create(&thread, NULL, populateStats, (void*)true);
 }
 
 int main(int argc, char *argv[]){
@@ -115,7 +111,6 @@ int main(int argc, char *argv[]){
     rtnCode = g_application_run(G_APPLICATION(app), argc, argv);
 
     g_object_unref (app);
-
 
     return rtnCode;
 }

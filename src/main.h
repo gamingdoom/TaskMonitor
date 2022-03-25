@@ -9,11 +9,6 @@ struct statistics {
     float *pidMem;
 };
 
-struct populateStatsArgs {
-    bool repeat;
-    GtkWidget *tv;
-};
-
 enum {
     PID,
     CPUUSAGE,
