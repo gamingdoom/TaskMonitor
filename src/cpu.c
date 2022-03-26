@@ -275,14 +275,13 @@ void getPIDName(int pid, char *name){
 
     free(tofree);
     free(line);
+    free(token);
 
     // Remove the parenthesis
-    if (name[strlen(name) - 1] == ')'){
+    if (name[strlen(name) - 1] == ')' && name[0] == '('){
         name[strlen(name) - 1] = '\0';
-    }
-    if (name[0] == '('){
         memmove(name, name+1, strlen(name));
     }
-
+    
     return;
 }
