@@ -17,3 +17,7 @@ Run:
 ```
 build/taskmonitor
 ```
+Install:
+```
+sudo ln -s `pwd`/build/taskmonitor /usr/local/bin/taskmonitor
+```
