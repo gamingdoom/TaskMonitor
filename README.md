@@ -2,7 +2,8 @@
 A Task Manager clone for Linux
 
 # How Do I Compile TaskMonitor?
-The dependencies are `gtk4`.
+The only dependency is `gtk4`
+
 Install Dependencies (Arch):
 ```
 sudo pacman -Sy gtk4
