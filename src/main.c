@@ -67,7 +67,7 @@ void *populateStats(void* repeat){
     free(PIDStr);
     free(stats.pidName);
 
-    //g_object_unref(store);
+    g_object_unref(store);
 
     if ((bool)repeat == true)
         populateStats((void *)true);
