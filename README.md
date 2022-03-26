@@ -2,10 +2,10 @@
 A Task Manager clone for Linux
 
 # How Do I Compile TaskMonitor?
-The dependencies are `gtk4` and `openmp`.
+The dependencies are `gtk4`.
 Install Dependencies (Arch):
 ```
-sudo pacman -Sy gtk4 openmp
+sudo pacman -Sy gtk4
 ```
 Download and Compile:
 ```
