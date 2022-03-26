@@ -247,7 +247,7 @@ int ProcessCPUUtil(int *pids, int *PIDCPU, int pidQty){
 void getPIDName(int pid, char *name){
     char *line = malloc(1024*sizeof(char));
     char *tofree;
-    char *token = malloc(1024*sizeof(char));
+    char *token;
     char *str;
     FILE *procstat;
 
@@ -275,7 +275,6 @@ void getPIDName(int pid, char *name){
 
     free(tofree);
     free(line);
-    free(token);
 
     // Remove the parenthesis
     if (name[strlen(name) - 1] == ')' && name[0] == '('){
