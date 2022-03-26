@@ -8,19 +8,26 @@
 #include <glib.h>
 #include <pthread.h>
 //gtk/gtk.h included in main.h
+
 GtkWidget *tv; // Tree View
 
 void *populateStats(void* repeat){
     //struct populateStatsArgs psa = *(struct populateStatsArgs*)PSA;
-    GtkListStore *store = gtk_list_store_new(N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+    GtkListStore *store = gtk_list_store_new(N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
     //GtkWidget *tv = psa.tv;
     struct statistics stats;
     int pidQty = getPIDs(NULL);
     stats.pids = (int*) malloc((pidQty + 128) * sizeof(int));
     stats.pidUsage = (int*) malloc((pidQty + 128) * sizeof(int));
-    char *MemUsageStr = malloc(sizeof(char)*128), *CPUUsageStr = malloc(sizeof(char)*128), *PIDStr = malloc(sizeof(char) * 128); 
-    
+    char *MemUsageStr = malloc(sizeof(char)*32), *CPUUsageStr = malloc(sizeof(char)*32), *PIDStr = malloc(sizeof(char) * 32); 
+
     pidQty = getPIDs(stats.pids);
+
+    stats.pidName = malloc((pidQty + 128) * sizeof(char*));
+    for (int i = 0; i < pidQty; i++) {
+        stats.pidName[i] = (char*) malloc(sizeof(char) * 128);
+        getPIDName(stats.pids[i], stats.pidName[i]);
+    }
 
     // Get per-process CPU usage into struct
     ProcessCPUUtil(stats.pids, stats.pidUsage, pidQty);
@@ -34,16 +41,16 @@ void *populateStats(void* repeat){
     snprintf(CPUUsageStr, 256*sizeof(char), "%d %%", stats.TotalCPUPercent);
     snprintf(MemUsageStr, 256*sizeof(char), "%.1f GiB", stats.memGB);
 
-    gtk_list_store_insert_with_values(store, NULL, -1, PID, "Total", CPUUSAGE, CPUUsageStr, MEMUSED, MemUsageStr, -1);
+    gtk_list_store_insert_with_values(store, NULL, -1, PID, "Total", NAME, "N/A", CPUUSAGE, CPUUsageStr, MEMUSED, MemUsageStr, -1);
 
     for (int i = 0; i < pidQty; i++)
     {
         if (i < (pidQty + 128)){
-            snprintf(PIDStr, 256*sizeof(char), "%d", stats.pids[i]);
-            snprintf(CPUUsageStr, 256*sizeof(char), "%d %%", stats.pidUsage[i]);
-            snprintf(MemUsageStr, 256*sizeof(char), "%.1f MiB", stats.pidMem[i]);
+            snprintf(PIDStr, 32*sizeof(char), "%d", stats.pids[i]);
+            snprintf(CPUUsageStr, 32*sizeof(char), "%d %%", stats.pidUsage[i]);
+            snprintf(MemUsageStr, 32*sizeof(char), "%.1f MiB", stats.pidMem[i]);
 
-            gtk_list_store_insert_with_values(store, NULL, -1, PID, PIDStr, CPUUSAGE, CPUUsageStr, MEMUSED, MemUsageStr, -1);
+            gtk_list_store_insert_with_values(store, NULL, -1, PID, PIDStr, NAME, stats.pidName[i],CPUUSAGE, CPUUsageStr, MEMUSED, MemUsageStr, -1);
         } else {
             printf("Warn: i > pidQty+128\n");
             break;
@@ -58,8 +65,9 @@ void *populateStats(void* repeat){
     free(CPUUsageStr);
     free(MemUsageStr);
     free(PIDStr);
+    free(stats.pidName);
 
-    g_object_unref(store);
+    //g_object_unref(store);
 
     if ((bool)repeat == true)
         populateStats((void *)true);
@@ -72,7 +80,6 @@ static void activate (GtkApplication* app, gpointer user_data){
     GtkWidget *window;
     GtkWidget *sbox;
     GtkCellRenderer *ren;
-    GtkTreeIter iter;
     pthread_t thread;
 
     window = gtk_application_window_new(app);
@@ -83,13 +90,12 @@ static void activate (GtkApplication* app, gpointer user_data){
     gtk_scrolled_window_set_max_content_width(GTK_SCROLLED_WINDOW(sbox), 640);
     gtk_scrolled_window_set_max_content_height(GTK_SCROLLED_WINDOW(sbox), 480);
 
-    GtkListStore *store = gtk_list_store_new(N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
-
     gtk_window_set_child(GTK_WINDOW(window), sbox);
 
     tv = gtk_tree_view_new();
     ren = gtk_cell_renderer_text_new();
     gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(tv), -1, "PID", ren, "text", PID, NULL);
+    gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(tv), -1, "Name", ren, "text", NAME, NULL);
     gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(tv), -1, "CPU %", ren, "text", CPUUSAGE, NULL);
     gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(tv), -1, "Memory Usage", ren, "text", MEMUSED, NULL);
 

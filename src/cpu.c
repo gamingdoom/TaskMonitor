@@ -243,3 +243,46 @@ int ProcessCPUUtil(int *pids, int *PIDCPU, int pidQty){
     free(k);
     return pidQty;
 }
+
+void getPIDName(int pid, char *name){
+    char *line = malloc(1024*sizeof(char));
+    char *tofree;
+    char *token = malloc(1024*sizeof(char));
+    char *str;
+    FILE *procstat;
+
+    // Open /proc/PID/stat
+    char namebuff[1024];
+    sprintf(namebuff, "/proc/%d/stat", pid);
+    procstat = fopen(namebuff, "r");
+    if ( access(namebuff, F_OK) == 0 ){
+        fgets(line, 1024, procstat);
+        fclose(procstat);
+    }
+    else 
+    {
+        return;
+    }
+
+    // Get name from the first line of /proc/PID/stat
+    tofree = str = strdup(line);
+    while ((token = strsep(&str, " "))){
+        if (strncmp(token, "(", 1) == 0){
+            strcpy(name, token);
+            break;
+        }
+    }
+
+    free(tofree);
+    free(line);
+
+    // Remove the parenthesis
+    if (name[strlen(name) - 1] == ')'){
+        name[strlen(name) - 1] = '\0';
+    }
+    if (name[0] == '('){
+        memmove(name, name+1, strlen(name));
+    }
+
+    return;
+}
