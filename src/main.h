@@ -8,6 +8,7 @@ struct statistics {
     double memGB;
     float *pidMem;
     char **pidName;
+    int pidQty;
 };
 
 enum {
