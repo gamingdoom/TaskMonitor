@@ -198,6 +198,12 @@ static void activate (GtkApplication* app, gpointer user_data){
     gtk_tree_view_append_column(GTK_TREE_VIEW(tv), col3);
     gtk_tree_view_append_column(GTK_TREE_VIEW(tv), col4);
 
+    // Make Columns Sortable
+    gtk_tree_view_column_set_sort_column_id(col1, PID);
+    gtk_tree_view_column_set_sort_column_id(col2, NAME);
+    gtk_tree_view_column_set_sort_column_id(col3, CPUUSAGE);
+    gtk_tree_view_column_set_sort_column_id(col4, MEMUSED);
+
     gtk_scrolled_window_set_child(GTK_SCROLLED_WINDOW(sbox), tv);
 
     gtk_box_set_homogeneous(GTK_BOX(totalBox), FALSE);
