@@ -22,6 +22,7 @@ GtkListStore *store;
 static void listStoreAddNRows(int n, GtkTreeModel *model) {
     GtkTreeIter iter;
     for (int i = 0; i < n; i++) {
+        printf("appending row");
         gtk_list_store_append(store, &iter);
         gtk_tree_model_row_inserted(model, gtk_tree_model_get_path(model, &iter), &iter);
     }
@@ -118,14 +119,14 @@ static void initTreeModel(struct statistics stats){
     }
 
     gtk_tree_view_set_model(GTK_TREE_VIEW(tv), GTK_TREE_MODEL(store));
-    g_object_unref(store);
+    //g_object_unref(store);
 
     free(MemUsedStr);
 
     return;
 }
 
-void *populateStats(void* repeat){
+gboolean populateStats(void* repeat){
     //struct populateStatsArgs psa = *(struct populateStatsArgs*)PSA;
     //GtkWidget *tv = psa.tv;
     struct statistics stats;
@@ -173,7 +174,7 @@ void *populateStats(void* repeat){
     if ((bool)repeat == true)
         populateStats((void*)repeat);
 
-    return 0;
+    return G_SOURCE_CONTINUE;
 }
 
 static void activate (GtkApplication* app, gpointer user_data){
@@ -225,7 +226,8 @@ static void activate (GtkApplication* app, gpointer user_data){
 
     gtk_widget_show(window);
 
-    pthread_create(&thread, NULL, populateStats, (void*)true);
+    g_idle_add(populateStats, (void*)false);
+    //pthread_create(&thread, NULL, populateStats, (void*)true);
 }
 
 int main(int argc, char *argv[]){
