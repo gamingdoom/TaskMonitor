@@ -1,13 +1,13 @@
 #include "main.h"
 #include "cpu.h"
 #include "mem.h"
+#include <gtk/gtk.h>
 #include <bits/pthreadtypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <glib.h>
 #include <pthread.h>
-//gtk/gtk.h included in main.h
 
 GtkWidget *tv; // Tree View
 GtkWidget *total; // Initialization label
@@ -17,21 +17,23 @@ GtkTreeViewColumn *col3;
 GtkTreeViewColumn *col4;
 bool remTotal = false;
 bool First = true;
+GtkListStore *store;
 
 static void UpdateView(GtkTreeView *tv, GtkTreeModel *model, struct statistics stats)
 {
     gboolean valid;
     GtkTreeIter iter;
     GtkTreeIter curr_iter;
-    GtkListStore *store = GTK_LIST_STORE(model);
+    //GtkListStore *store = GTK_LIST_STORE(model);
+    //GtkTreeIter new_iter;
 
     valid = gtk_tree_model_get_iter_first(model, &iter);
     // Add or Remove rows so that the total number of rows is equal to stats.pidQty
     while (valid){
         valid = gtk_tree_model_iter_next(model, &iter);
         if (valid == false && stats.pidQty > gtk_tree_model_iter_n_children(model, NULL)){
-            gtk_list_store_append(store, &iter);
-            gtk_tree_model_row_inserted(model, gtk_tree_model_get_path(model, &iter), &iter);
+            gtk_list_store_insert_with_values(store, NULL, -1, PID, 0, NAME, "", CPUUSAGE, 0, MEMUSED, "", -1);
+            //gtk_tree_model_row_inserted(model, gtk_tree_model_get_path(model, &iter), &iter);
             //valid = gtk_tree_model_iter_next(model, &iter);
             valid = true;
         }
@@ -49,6 +51,7 @@ static void UpdateView(GtkTreeView *tv, GtkTreeModel *model, struct statistics s
             gtk_tree_model_get_iter_first(model, &curr_iter);
         else
             gtk_tree_model_iter_next(model, &curr_iter);
+
         valid = gtk_tree_model_iter_next(model, &iter);
         char *MemUsedStr = malloc(128*sizeof(char));
 
@@ -65,7 +68,7 @@ static void UpdateView(GtkTreeView *tv, GtkTreeModel *model, struct statistics s
         iteration++;
     }
     // Update Column Titles
-    char CPUTotalStr[128], MemTotalStr[128], PIDAmmountStr[128], *MemUsedStr = malloc(128*sizeof(char)); 
+    char CPUTotalStr[128], MemTotalStr[128], PIDAmmountStr[128]; 
     
     // Make new column Titles
     snprintf(PIDAmmountStr, 128*sizeof(char), "%d\nPID", stats.pidQty);
@@ -79,7 +82,7 @@ static void UpdateView(GtkTreeView *tv, GtkTreeModel *model, struct statistics s
 }
 
 static void initTreeModel(struct statistics stats){
-    GtkListStore *store = gtk_list_store_new(N_COLUMNS, G_TYPE_INT, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING);
+    
     char CPUTotalStr[128], MemTotalStr[128], PIDAmmountStr[128], *MemUsedStr = malloc(128*sizeof(char)); 
     
     // Make new column Titles
@@ -144,6 +147,7 @@ void *populateStats(void* repeat){
     }
 
     if (First == true){
+        store = gtk_list_store_new(N_COLUMNS, G_TYPE_INT, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING);
         initTreeModel(stats);
         First = false;
     } else {

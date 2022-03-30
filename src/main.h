@@ -1,5 +1,3 @@
-#include <gtk/gtk.h>
-
 struct statistics {
     int TotalCPUPercent;
     int *pids;

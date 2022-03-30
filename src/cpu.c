@@ -5,7 +5,6 @@
 #include <math.h>
 #include <sys/resource.h>
 #include <dirent.h>
-#include <omp.h>
 #include "cpu.h"
 
 
@@ -17,7 +16,6 @@ int TotalCPUUtil() {
     char valArr[32][32];
     char newValArr[32][32];
     int i = 0;
-    float usage;
 
     // Read /proc/stat
     procstat = fopen("/proc/stat", "r");
@@ -76,7 +74,6 @@ int PIDCPUUsage(int pid){
     char valArr[64][128];
     char newValArr[64][128];
     int i = 0;
-    float usage;
     char namebuff[512];
 
     line = malloc(1024*sizeof(char));
@@ -225,12 +222,6 @@ int getPIDs(int *pids){
 
 
 int ProcessCPUUtil(int *pids, int *PIDCPU, int pidQty){
-    
-    struct rusage *procusage;
-    struct dirent *files;
-    int* NumProc;
-    int* tofree;
-
     // Iterate over every PID to get it's CPU usage
     int j;
     int *k = malloc(sizeof(int));
