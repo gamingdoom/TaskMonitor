@@ -2,7 +2,7 @@
 A Task Manager clone for Linux
 
 # How Do I Compile TaskMonitor?
-The only dependency is `gtk4`
+The dependencies are `gtk4` and `pthread`
 
 Install Dependencies (Arch):
 ```
