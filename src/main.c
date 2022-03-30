@@ -2,12 +2,10 @@
 #include "cpu.h"
 #include "mem.h"
 #include <gtk/gtk.h>
-#include <bits/pthreadtypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <glib.h>
-#include <pthread.h>
 
 GtkWidget *tv; // Tree View
 GtkWidget *total; // Initialization label
@@ -22,7 +20,7 @@ GtkListStore *store;
 static void listStoreAddNRows(int n, GtkTreeModel *model) {
     GtkTreeIter iter;
     for (int i = 0; i < n; i++) {
-        printf("appending row");
+        printf("appending row\n");
         gtk_list_store_append(store, &iter);
         gtk_tree_model_row_inserted(model, gtk_tree_model_get_path(model, &iter), &iter);
     }
@@ -119,7 +117,6 @@ static void initTreeModel(struct statistics stats){
     }
 
     gtk_tree_view_set_model(GTK_TREE_VIEW(tv), GTK_TREE_MODEL(store));
-    //g_object_unref(store);
 
     free(MemUsedStr);
 
@@ -127,8 +124,6 @@ static void initTreeModel(struct statistics stats){
 }
 
 gboolean populateStats(void* repeat){
-    //struct populateStatsArgs psa = *(struct populateStatsArgs*)PSA;
-    //GtkWidget *tv = psa.tv;
     struct statistics stats;
     int pidQty = getPIDs(NULL);
     stats.pids = (int*) malloc((pidQty + 128) * sizeof(int));
@@ -151,7 +146,6 @@ gboolean populateStats(void* repeat){
     // Get per-process memory usage
     stats.pidMem = ProcessMemUtil(stats.pids, pidQty);
 
-    //gtk_label_set_text(GTK_LABEL(total), TotalStr);
     // Remove label from box if label is in box
     if (remTotal == false) {
         gtk_box_remove(GTK_BOX(gtk_widget_get_parent(total)), total);
@@ -176,6 +170,10 @@ gboolean populateStats(void* repeat){
 
     return G_SOURCE_CONTINUE;
 }
+void *doThread(){
+    populateStats((void*)true);
+    return NULL;
+}
 
 static void activate (GtkApplication* app, gpointer user_data){
     // Set window items and layout
@@ -183,7 +181,6 @@ static void activate (GtkApplication* app, gpointer user_data){
     GtkWidget *sbox;
     GtkWidget *totalBox;
     GtkCellRenderer *ren;
-    pthread_t thread;
 
     window = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(window), "Task Monitor");
@@ -226,8 +223,9 @@ static void activate (GtkApplication* app, gpointer user_data){
 
     gtk_widget_show(window);
 
-    g_idle_add(populateStats, (void*)false);
-    //pthread_create(&thread, NULL, populateStats, (void*)true);
+    // Start thread
+    g_thread_new("thread", doThread, NULL);
+    //pthread_create(&thread, NULL, populateStats, (void*)false);
 }
 
 int main(int argc, char *argv[]){

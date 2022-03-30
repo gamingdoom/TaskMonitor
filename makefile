@@ -5,7 +5,7 @@ all: obj taskmonitor
 obj:
 clean:
 
-LIBS=`pkg-config --libs gtk4` -lpthread
+LIBS=`pkg-config --libs gtk4`
 INCLUDE=`pkg-config --cflags gtk4`
 src_root := src
 src_subdirs := 
