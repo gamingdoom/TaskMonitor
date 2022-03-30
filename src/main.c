@@ -19,6 +19,15 @@ bool remTotal = false;
 bool First = true;
 GtkListStore *store;
 
+static void listStoreAddNRows(int n, GtkTreeModel *model) {
+    GtkTreeIter iter;
+    for (int i = 0; i < n; i++) {
+        gtk_list_store_append(store, &iter);
+        gtk_tree_model_row_inserted(model, gtk_tree_model_get_path(model, &iter), &iter);
+    }
+    return;
+}
+
 static void UpdateView(GtkTreeView *tv, GtkTreeModel *model, struct statistics stats)
 {
     gboolean valid;
@@ -26,22 +35,24 @@ static void UpdateView(GtkTreeView *tv, GtkTreeModel *model, struct statistics s
     GtkTreeIter curr_iter;
     //GtkListStore *store = GTK_LIST_STORE(model);
     //GtkTreeIter new_iter;
+    int rows = 0, rowsneeded = 0;
 
     valid = gtk_tree_model_get_iter_first(model, &iter);
     // Add or Remove rows so that the total number of rows is equal to stats.pidQty
     while (valid){
         valid = gtk_tree_model_iter_next(model, &iter);
-        if (valid == false && stats.pidQty > gtk_tree_model_iter_n_children(model, NULL)){
-            gtk_list_store_insert_with_values(store, NULL, -1, PID, 0, NAME, "", CPUUSAGE, 0, MEMUSED, "", -1);
-            //gtk_tree_model_row_inserted(model, gtk_tree_model_get_path(model, &iter), &iter);
-            //valid = gtk_tree_model_iter_next(model, &iter);
+        rows = gtk_tree_model_iter_n_children(model, NULL);
+        rows += rowsneeded;
+        if (valid == false && stats.pidQty > rows){
+            rowsneeded++;
             valid = true;
         }
-        else if (valid == true && stats.pidQty < gtk_tree_model_iter_n_children(model, NULL)){
+        else if (valid == true && stats.pidQty < rows){
            gtk_list_store_remove(store, &iter);
            gtk_tree_model_row_deleted(model, gtk_tree_model_get_path(model, &iter));
         }
     }
+    listStoreAddNRows(rowsneeded, model);
     // Update the values of each row
     valid = gtk_tree_model_get_iter_first(model, &iter);
     int iteration = 0;//gtk_tree_model_iter_n_children(model, &curr_iter);
