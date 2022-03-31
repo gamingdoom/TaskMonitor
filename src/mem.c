@@ -27,7 +27,7 @@ float procMemUsage(int pid){
     // Parse /proc/[pid]/stat
     if(access(namebuf, F_OK) == 0){
         procpidstatm = fopen(namebuf, "r");
-        fscanf(procpidstatm, "%*lu %f", &rss);
+        fscanf(procpidstatm, "%*u %f", &rss);
         fclose(procpidstatm);
     }
 

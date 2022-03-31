@@ -5,7 +5,10 @@
 #include <math.h>
 #include <sys/resource.h>
 #include <dirent.h>
+#include <glib.h>
+#include <assert.h>
 #include "cpu.h"
+#include "main.h"
 
 
 int TotalCPUUtil() {
@@ -80,7 +83,6 @@ int PIDCPUUsage(int pid){
 
     // Insert PID into /proc/PID/stat
     snprintf(namebuff, 512, "/proc/%d/stat", pid);
-
 
     // Read /proc/PID/stat
     procstat = fopen(namebuff, "r");
@@ -220,26 +222,108 @@ int getPIDs(int *pids){
     return pidQty;
 }
 
+struct threadInfo *getProcessCPUUtil(void *tinfo){
+    struct threadInfo *ti = (struct threadInfo *)tinfo;
 
-int ProcessCPUUtil(int *pids, int *PIDCPU, int pidQty){
-    // Iterate over every PID to get it's CPU usage
-    int j;
-    int *k = malloc(sizeof(int));
-    memcpy(k, &pidQty, sizeof(int));
-
-    for (j = 0; j < *k; j++) {
-        PIDCPU[j] = PIDCPUUsage(pids[j]);
+    for (int i = 0; i < ti->pidQty; i++) {
+        assert (i != ti->pidQty);
+        ti->pidUsage[i] = PIDCPUUsage(ti->pids[i]);
     }
+    return ti;
+}
 
-    free(k);
-    return pidQty;
+void *ProcessCPUUtil(void *stats){
+    struct statistics stat = *(struct statistics *)stats;
+    int pidQty = stat.pidQty;
+    int *pids = stat.pids;
+    int *PIDCPU = stat.pidUsage;
+
+    // Get number of available threads (2 already used by program)
+    int threads = sysconf(_SC_NPROCESSORS_ONLN) - 2;
+    int x = 0;
+
+        if (threads > 0)
+        {
+            int **splitPids = malloc(sizeof(int*) * threads);;
+            struct threadInfo **threadInfo = malloc(sizeof(struct threadInfo*) * threads);
+            GThread **threadArray = malloc(sizeof(GThread*) * threads);
+            int offset = 0;
+            int i = 0;
+
+            for (x = 0; x < threads; x++) {
+                // Split pids by the number of threads
+                // Last thread gets the remainder + the normal amount
+                if (x == threads - 1)
+                    splitPids[x] = malloc(sizeof(int) * ((pidQty - pidQty % threads) / threads) + pidQty % threads);
+                else
+                    splitPids[x] = malloc(sizeof(int) * ((pidQty - pidQty % threads) / threads));
+                // Last thread gets the remainder + the normal amount
+                if (x == threads - 1)
+                    memcpy(splitPids[x], &pids[(pidQty - pidQty % threads) / threads * x], sizeof(int) * ((pidQty - pidQty % threads) / threads) + pidQty % threads);
+                else
+                    memcpy(splitPids[x], &pids[(pidQty - pidQty % threads) / threads * x], sizeof(int) * ((pidQty - pidQty % threads) / threads));
+                
+
+                // Create array threadinfo structs
+                threadInfo[x] = malloc(sizeof(struct threadInfo*));
+
+                if (x == threads - 1)
+                    threadInfo[x]->pidQty = ((pidQty - pidQty % threads) / threads) + pidQty % threads;
+                else
+                    threadInfo[x]->pidQty = (pidQty - pidQty % threads) / threads;
+
+                threadInfo[x]->pids = malloc(sizeof(int) * threadInfo[x]->pidQty);
+                threadInfo[x]->pidUsage = malloc(threadInfo[x]->pidQty * sizeof(int));
+                memcpy(threadInfo[x]->pids, splitPids[x], sizeof(int) * threadInfo[x]->pidQty);
+
+
+                // Create thread
+                threadArray[x] = g_thread_new("procCPUUtilWorkerThread", (GThreadFunc)getProcessCPUUtil, threadInfo[x]);
+            }
+
+            // Join threads
+            for (x = 0; x < threads; x++) {
+                threadInfo[x] = g_thread_join(threadArray[x]);
+                assert(threadInfo[x] != NULL);
+            }
+
+            // Merge results
+            for (x = 0; x < threads; x++) {
+                for (i = 0; i < threadInfo[x]->pidQty; i++) {
+                    stat.pidUsage[offset + i] = threadInfo[x]->pidUsage[i];
+                }
+                offset += i;
+            }
+
+            // Free memory
+            for (x = 0; x < threads; x++) {
+                free(threadInfo[x]->pids);
+                free(threadInfo[x]->pidUsage);
+                free(threadInfo[x]);
+                free(splitPids[x]);
+            }
+
+            free(threadArray);
+            free(threadInfo);
+            free(splitPids);
+        }
+        else
+        {
+            struct threadInfo *tinfo = malloc(sizeof(struct threadInfo*));
+            tinfo->pidQty = pidQty;
+            tinfo->pids = pids;
+            tinfo->pidUsage = PIDCPU;
+            getProcessCPUUtil(tinfo);
+            PIDCPU = tinfo->pidUsage;
+            free(tinfo);
+        }
+    return 0;
 }
 
 void getPIDName(int pid, char *name){
     char *line = malloc(1024*sizeof(char));
-    char *tofree;
     char *token;
-    char *str;
+    char *toFree;
     FILE *procstat;
 
     // Open /proc/PID/stat
@@ -256,21 +340,20 @@ void getPIDName(int pid, char *name){
     }
 
     // Get name from the first line of /proc/PID/stat
-    tofree = str = strdup(line);
-    while ((token = strsep(&str, " "))){
+    toFree = line;
+    while ((token = strsep(&line, " "))){
         if (strncmp(token, "(", 1) == 0){
             strcpy(name, token);
             break;
         }
     }
 
-    free(tofree);
-    free(line);
+    free(toFree);
 
     // Remove the parenthesis
     if (name[strlen(name) - 1] == ')' && name[0] == '('){
         name[strlen(name) - 1] = '\0';
-        memmove(name, name+1, strlen(name));
+        memmove(name, name+1, sizeof(char) * strlen(name));
     }
     
     return;

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <glib.h>
+#include <unistd.h>
 
 GtkWidget *tv; // Tree View
 GtkWidget *total; // Initialization label
@@ -20,9 +21,9 @@ GtkListStore *store;
 static void listStoreAddNRows(int n, GtkTreeModel *model) {
     GtkTreeIter iter;
     for (int i = 0; i < n; i++) {
-        printf("appending row\n");
-        gtk_list_store_append(store, &iter);
-        gtk_tree_model_row_inserted(model, gtk_tree_model_get_path(model, &iter), &iter);
+        //printf("appending row\n");
+        gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+        //gtk_tree_model_row_inserted(model, gtk_tree_model_get_path(model, &iter), &iter);
     }
     return;
 }
@@ -32,9 +33,12 @@ static void UpdateView(GtkTreeView *tv, GtkTreeModel *model, struct statistics s
     gboolean valid;
     GtkTreeIter iter;
     GtkTreeIter curr_iter;
-    //GtkListStore *store = GTK_LIST_STORE(model);
-    //GtkTreeIter new_iter;
     int rows = 0, rowsneeded = 0;
+
+    valid = gtk_tree_model_get_iter_first(model, &iter);
+
+    if (valid == false)
+        listStoreAddNRows(1, model);
 
     valid = gtk_tree_model_get_iter_first(model, &iter);
     // Add or Remove rows so that the total number of rows is equal to stats.pidQty
@@ -54,7 +58,7 @@ static void UpdateView(GtkTreeView *tv, GtkTreeModel *model, struct statistics s
     listStoreAddNRows(rowsneeded, model);
     // Update the values of each row
     valid = gtk_tree_model_get_iter_first(model, &iter);
-    int iteration = 0;//gtk_tree_model_iter_n_children(model, &curr_iter);
+    int iteration = 0;
     while (valid)
     {      
         if (iteration == 0)
@@ -91,38 +95,6 @@ static void UpdateView(GtkTreeView *tv, GtkTreeModel *model, struct statistics s
     gtk_tree_view_column_set_title(col4, MemTotalStr);
 }
 
-static void initTreeModel(struct statistics stats){
-    
-    char CPUTotalStr[128], MemTotalStr[128], PIDAmmountStr[128], *MemUsedStr = malloc(128*sizeof(char)); 
-    
-    // Make new column Titles
-    snprintf(PIDAmmountStr, 128*sizeof(char), "%d\nPID", stats.pidQty);
-    snprintf(CPUTotalStr, 128*sizeof(char), "%d %%\nCPU Usage (%%)", stats.TotalCPUPercent);
-    snprintf(MemTotalStr, 128*sizeof(char), "%.1f GiB\nMemory Usage", stats.memGB);
-    
-    // Set column titles
-    gtk_tree_view_column_set_title(col1, PIDAmmountStr);
-    gtk_tree_view_column_set_title(col3, CPUTotalStr);
-    gtk_tree_view_column_set_title(col4, MemTotalStr);
-    
-    for (int i = 0; i < stats.pidQty; i++)
-    {
-        if (i < (stats.pidQty + 128)){
-            snprintf(MemUsedStr, 128*sizeof(char), "%.1f MiB", stats.pidMem[i]);
-            gtk_list_store_insert_with_values(store, NULL, -1, PID, stats.pids[i], NAME, stats.pidName[i], CPUUSAGE, stats.pidUsage[i], MEMUSED, MemUsedStr, -1);
-        } else {
-            printf("Warn: i > pidQty+128\n");
-            break;
-        }
-    }
-
-    gtk_tree_view_set_model(GTK_TREE_VIEW(tv), GTK_TREE_MODEL(store));
-
-    free(MemUsedStr);
-
-    return;
-}
-
 gboolean populateStats(void* repeat){
     struct statistics stats;
     int pidQty = getPIDs(NULL);
@@ -131,20 +103,26 @@ gboolean populateStats(void* repeat){
 
     stats.pidQty = getPIDs(stats.pids);
 
-    stats.pidName = malloc((pidQty + 128) * sizeof(char*));
-    for (int i = 0; i < pidQty; i++) {
+    stats.pidName = malloc((stats.pidQty + 128) * sizeof(char*));
+    for (int i = 0; i < stats.pidQty; i++) {
         stats.pidName[i] = (char*) malloc(sizeof(char) * 128);
         getPIDName(stats.pids[i], stats.pidName[i]);
     }
 
-    // Get per-process CPU usage into struct
-    ProcessCPUUtil(stats.pids, stats.pidUsage, pidQty);
     // Get total CPU usage into struct
     stats.TotalCPUPercent = TotalCPUUtil();
+    // Get per-process CPU usage into struct
+    GThread *processCPUThread = g_thread_new("procCPUUtil", ProcessCPUUtil, (void*)&stats);
     // Total Memory Usage
     stats.memGB = (stats.memMB = memUsage())/1024.0;
     // Get per-process memory usage
     stats.pidMem = ProcessMemUtil(stats.pids, pidQty);
+
+    // Join procCPUUtil thread
+    g_thread_join(processCPUThread);
+
+    // Average total CPU usage (for more accurate total CPU usage)
+    stats.TotalCPUPercent = (stats.TotalCPUPercent + TotalCPUUtil()) / 2;
 
     // Remove label from box if label is in box
     if (remTotal == false) {
@@ -154,15 +132,18 @@ gboolean populateStats(void* repeat){
 
     if (First == true){
         store = gtk_list_store_new(N_COLUMNS, G_TYPE_INT, G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING);
-        initTreeModel(stats);
+        //initTreeModel(stats);
+        gtk_tree_view_set_model(GTK_TREE_VIEW(tv), GTK_TREE_MODEL(store));
         First = false;
-    } else {
+    }// else {
         UpdateView(GTK_TREE_VIEW(tv), GTK_TREE_MODEL(gtk_tree_view_get_model(GTK_TREE_VIEW(tv))), stats);
-    }
+    //}
 
     free(stats.pidMem);
     free(stats.pids);
     free(stats.pidUsage);
+    for (int i = 0; i < stats.pidQty; i++)
+        free(stats.pidName[i]);
     free(stats.pidName);
 
     if ((bool)repeat == true)
@@ -175,7 +156,7 @@ void *doThread(){
     return NULL;
 }
 
-static void activate (GtkApplication* app, gpointer user_data){
+static void activate (GtkApplication* app){
     // Set window items and layout
     GtkWidget *window;
     GtkWidget *sbox;
