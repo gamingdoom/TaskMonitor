@@ -52,7 +52,7 @@ static void UpdateView(GtkTreeView *tv, GtkTreeModel *model, struct statistics s
         }
         else if (valid == true && stats.pidQty < rows){
            gtk_list_store_remove(store, &iter);
-           gtk_tree_model_row_deleted(model, gtk_tree_model_get_path(model, &iter));
+           //gtk_tree_model_row_deleted(model, gtk_tree_model_get_path(model, &iter));
         }
     }
     listStoreAddNRows(rowsneeded, model);
