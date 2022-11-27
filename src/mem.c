@@ -19,6 +19,18 @@ float memUsage(){
     return memUsed;
 }
 
+int getTotalMem(){
+    FILE *meminfo;
+    long double memtotal;
+
+    // Read /proc/meminfo
+    meminfo = fopen("/proc/meminfo", "r");
+    fscanf(meminfo, "MemTotal: %Lf kB", &memtotal);
+    fclose(meminfo);
+
+    return memtotal/1024;
+}
+
 float procMemUsage(int pid){
     FILE *procpidstatm;
     char namebuf[1024]; sprintf(namebuf,"/proc/%d/statm", pid);
